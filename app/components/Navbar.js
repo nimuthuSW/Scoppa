@@ -38,6 +38,9 @@ export default function Navbar() {
             </span>
           )}
         </Link>
+        <Link href="/orders" style={{ textDecoration: 'none', color: '#555' }}>
+          Orders
+        </Link>
         {session ? (
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <span style={{ color: '#555' }}>Hi, {session.user.name}</span>
