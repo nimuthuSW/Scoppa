@@ -6,24 +6,36 @@ export default async function ProductsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">All Products</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem' }}>
+        All Products
+      </h1>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '1.5rem',
+      }}>
         {products.map((product) => (
-          <Link href={`/products/${product.id}`} key={product.id}>
-            <div className="bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow">
+          <Link href={`/products/${product.id}`} key={product.id} style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+              overflow: 'hidden',
+              cursor: 'pointer',
+            }}>
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-56 object-cover rounded-t-xl"
+                style={{ width: '100%', height: '200px', objectFit: 'cover' }}
               />
-              <div className="p-4">
-                <h2 className="text-lg font-semibold text-gray-800">
+              <div style={{ padding: '1rem' }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#1a1a1a' }}>
                   {product.name}
                 </h2>
-                <p className="text-gray-500 text-sm mt-1 line-clamp-2">
+                <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '0.5rem' }}>
                   {product.description}
                 </p>
-                <p className="text-xl font-bold text-gray-900 mt-3">
+                <p style={{ fontSize: '1.3rem', fontWeight: 'bold', marginTop: '0.75rem' }}>
                   ${product.price.toFixed(2)}
                 </p>
               </div>
