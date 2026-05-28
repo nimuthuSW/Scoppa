@@ -12,19 +12,32 @@ export default async function ProductPage({ params }) {
   if (!product) return notFound()
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', alignItems: 'center' }}>
-      <img
-        src={product.image}
-        alt={product.name}
-        style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: '12px' }}
-      />
-      <div>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>{product.name}</h1>
-        <p style={{ color: '#666', marginTop: '1rem', fontSize: '1.1rem' }}>{product.description}</p>
-        <p style={{ fontSize: '2rem', fontWeight: 'bold', marginTop: '1.5rem' }}>
-          ${product.price.toFixed(2)}
-        </p>
-        <p style={{ color: '#999', marginTop: '0.5rem' }}>{product.stock} in stock</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+      <div className="rounded-2xl overflow-hidden bg-slate-100 shadow-sm animate-fade-in">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="w-full h-[480px] object-cover"
+        />
+      </div>
+
+      <div className="py-2 animate-fade-in-up animation-delay-100">
+        <h1 className="text-3xl font-bold text-slate-900">{product.name}</h1>
+        <p className="text-slate-500 mt-4 text-base leading-relaxed">{product.description}</p>
+
+        <div className="mt-6">
+          <p className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+            ${product.price.toFixed(2)}
+          </p>
+          <p className="text-sm mt-1.5">
+            {product.stock > 0 ? (
+              <span className="text-emerald-600 font-medium">{product.stock} in stock</span>
+            ) : (
+              <span className="text-red-500 font-medium">Out of stock</span>
+            )}
+          </p>
+        </div>
+
         <AddToCartButton product={product} />
       </div>
     </div>

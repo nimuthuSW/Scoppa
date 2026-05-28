@@ -17,61 +17,67 @@ export default async function OrdersPage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem' }}>My Orders</h1>
+      <h1 className="text-3xl font-bold text-slate-900 mb-8 animate-fade-in-up">My Orders</h1>
 
       {orders.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem' }}>
-          <p style={{ color: '#666', fontSize: '1.1rem' }}>You have no orders yet.</p>
-          <Link href="/products" style={{
-            display: 'inline-block', marginTop: '1.5rem', background: 'black',
-            color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', textDecoration: 'none',
-          }}>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center animate-fade-in-up">
+          <div className="text-6xl mb-4">📦</div>
+          <p className="text-slate-400 text-lg mb-6">You have no orders yet.</p>
+          <Link
+            href="/products"
+            className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-xl font-semibold shadow-sm hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all duration-200"
+          >
             Start Shopping
           </Link>
         </div>
       ) : (
-        orders.map(order => (
-          <div key={order.id} style={{
-            background: 'white', borderRadius: '12px', padding: '1.5rem',
-            marginBottom: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <div>
-                <p style={{ fontWeight: '600' }}>Order #{order.id.slice(-8)}</p>
-                <p style={{ color: '#666', fontSize: '0.9rem' }}>
-                  {new Date(order.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{
-                  background: '#e8f5e9', color: '#2e7d32',
-                  padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.85rem',
-                }}>
-                  {order.status}
-                </span>
-                <p style={{ fontWeight: 'bold', marginTop: '0.25rem' }}>${order.total.toFixed(2)}</p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              {order.items.map(item => (
-                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img
-                    src={item.product.image}
-                    alt={item.product.name}
-                    style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px' }}
-                  />
-                  <span style={{ fontSize: '0.9rem', color: '#555' }}>x{item.quantity}</span>
+        <div className="space-y-4">
+          {orders.map((order, index) => (
+            <div
+              key={order.id}
+              className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-50 hover:-translate-y-0.5 transition-all duration-200 animate-fade-in-up"
+              style={{ animationDelay: `${index * 80}ms` }}
+            >
+              <div className="flex justify-between items-start mb-5">
+                <div>
+                  <p className="font-semibold text-slate-900">Order #{order.id.slice(-8).toUpperCase()}</p>
+                  <p className="text-sm text-slate-400 mt-0.5">
+                    {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
                 </div>
-              ))}
+                <div className="text-right">
+                  <span className="inline-block bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-100">
+                    {order.status}
+                  </span>
+                  <p className="font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent mt-1.5">
+                    ${order.total.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 flex-wrap">
+                {order.items.map(item => (
+                  <div key={item.id} className="relative">
+                    <img
+                      src={item.product.image}
+                      alt={item.product.name}
+                      className="w-14 h-14 object-cover rounded-xl border border-slate-100"
+                    />
+                    {item.quantity > 1 && (
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                        {item.quantity}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <Link href={`/orders/${order.id}`} className="inline-block mt-4 text-sm font-semibold text-indigo-600 hover:text-violet-600 transition-colors">
+                View Details →
+              </Link>
             </div>
-            <Link href={`/orders/${order.id}`} style={{
-              display: 'inline-block', marginTop: '1rem', color: 'black',
-              fontWeight: '600', fontSize: '0.9rem', textDecoration: 'underline',
-            }}>
-              View Details →
-            </Link>
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   )

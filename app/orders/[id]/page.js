@@ -19,49 +19,52 @@ export default async function OrderPage({ params }) {
   if (!order || order.userId !== session.user.id) notFound()
 
   return (
-    <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <div style={{ fontSize: '4rem' }}>✅</div>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginTop: '1rem' }}>Order Confirmed!</h1>
-        <p style={{ color: '#666', marginTop: '0.5rem' }}>Order ID: {order.id}</p>
+    <div className="max-w-2xl mx-auto">
+      <div className="text-center mb-10 animate-fade-in-up">
+        <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-full flex items-center justify-center mx-auto mb-5 text-2xl shadow-md shadow-indigo-100">
+          ✓
+        </div>
+        <h1 className="text-3xl font-bold text-slate-900">Order Confirmed!</h1>
+        <p className="text-slate-400 text-sm mt-2 font-mono">#{order.id}</p>
       </div>
 
-      <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ fontWeight: '600', marginBottom: '1rem' }}>Items Ordered</h2>
-        {order.items.map(item => (
-          <div key={item.id} style={{
-            display: 'flex', gap: '1rem', alignItems: 'center',
-            paddingBottom: '1rem', marginBottom: '1rem', borderBottom: '1px solid #eee',
-          }}>
-            <img
-              src={item.product.image}
-              alt={item.product.name}
-              style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px' }}
-            />
-            <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: '600' }}>{item.product.name}</p>
-              <p style={{ color: '#666', fontSize: '0.9rem' }}>Qty: {item.quantity}</p>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 animate-fade-in-up animation-delay-150">
+        <h2 className="font-semibold text-slate-900 mb-5">Items Ordered</h2>
+        <div className="divide-y divide-slate-50">
+          {order.items.map(item => (
+            <div key={item.id} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
+              <img
+                src={item.product.image}
+                alt={item.product.name}
+                className="w-16 h-16 object-cover rounded-xl flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-slate-900 truncate">{item.product.name}</p>
+                <p className="text-sm text-slate-400">Qty: {item.quantity}</p>
+              </div>
+              <p className="font-bold text-slate-900">${(item.price * item.quantity).toFixed(2)}</p>
             </div>
-            <p style={{ fontWeight: 'bold' }}>${(item.price * item.quantity).toFixed(2)}</p>
-          </div>
-        ))}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '1rem' }}>
-          <span>Total</span>
-          <span>${order.total.toFixed(2)}</span>
+          ))}
+        </div>
+        <div className="border-t border-slate-100 mt-4 pt-4 flex justify-between font-bold text-lg">
+          <span className="text-slate-900">Total</span>
+          <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+            ${order.total.toFixed(2)}
+          </span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', justifyContent: 'center' }}>
-        <Link href="/orders" style={{
-          padding: '0.75rem 1.5rem', border: '1px solid #ddd',
-          borderRadius: '8px', textDecoration: 'none', color: '#333',
-        }}>
+      <div className="flex gap-3 mt-8 justify-center animate-fade-in-up animation-delay-300">
+        <Link
+          href="/orders"
+          className="px-6 py-3 border border-indigo-100 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 hover:border-indigo-200 transition-all duration-150"
+        >
           View All Orders
         </Link>
-        <Link href="/products" style={{
-          padding: '0.75rem 1.5rem', background: 'black',
-          color: 'white', borderRadius: '8px', textDecoration: 'none',
-        }}>
+        <Link
+          href="/products"
+          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-sm font-semibold shadow-sm hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all duration-200"
+        >
           Continue Shopping
         </Link>
       </div>

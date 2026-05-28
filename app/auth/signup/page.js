@@ -34,52 +34,68 @@ export default function SignupPage() {
   }
 
   return (
-    <div style={{ maxWidth: '400px', margin: '4rem auto' }}>
-      <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem' }}>Create Account</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' }}
-          />
+    <div className="min-h-[72vh] flex items-center justify-center">
+      <div className="w-full max-w-md animate-fade-in-up">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-900">Create an account</h1>
+          <p className="text-slate-400 mt-2">Join sċoppa today</p>
         </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' }}
-          />
+
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                placeholder="Jane Smith"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-indigo-200 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-indigo-200 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-indigo-200 transition-colors"
+              />
+            </div>
+            {error && (
+              <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 animate-scale-in">
+                {error}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3.5 rounded-xl font-semibold shadow-sm hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-sm transition-all duration-200 cursor-pointer"
+            >
+              {loading ? 'Creating account...' : 'Sign Up'}
+            </button>
+          </form>
         </div>
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', boxSizing: 'border-box' }}
-          />
-        </div>
-        {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ width: '100%', padding: '0.75rem', background: 'black', color: 'white', borderRadius: '8px', border: 'none', fontSize: '1rem', cursor: 'pointer' }}
-        >
-          {loading ? 'Creating account...' : 'Sign Up'}
-        </button>
-      </form>
-      <p style={{ marginTop: '1.5rem', textAlign: 'center', color: '#666' }}>
-        Already have an account?{' '}
-        <Link href="/auth/login" style={{ color: 'black', fontWeight: '600' }}>Login</Link>
-      </p>
+
+        <p className="text-center text-sm text-slate-400 mt-6">
+          Already have an account?{' '}
+          <Link href="/auth/login" className="text-indigo-600 font-semibold hover:text-violet-600 transition-colors">Sign in</Link>
+        </p>
+      </div>
     </div>
   )
 }

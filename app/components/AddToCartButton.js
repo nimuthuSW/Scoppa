@@ -8,17 +8,7 @@ export default function AddToCartButton({ product }) {
   return (
     <button
       onClick={() => addToCart(product)}
-      style={{
-        marginTop: '2rem',
-        background: 'black',
-        color: 'white',
-        padding: '1rem 2rem',
-        borderRadius: '8px',
-        fontSize: '1rem',
-        border: 'none',
-        cursor: 'pointer',
-        width: '100%',
-      }}
+      className="mt-8 w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-4 rounded-xl font-semibold text-base shadow-md hover:shadow-xl hover:shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] transition-all duration-200 cursor-pointer"
     >
       Add to Cart
     </button>

@@ -15,12 +15,12 @@ export default function CheckoutPage() {
 
   if (cart.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>Your cart is empty</h1>
-        <Link href="/products" style={{
-          display: 'inline-block', marginTop: '1.5rem', background: 'black',
-          color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', textDecoration: 'none',
-        }}>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in-up">
+        <h1 className="text-2xl font-bold text-slate-900 mb-4">Your cart is empty</h1>
+        <Link
+          href="/products"
+          className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-xl font-semibold shadow-sm hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all duration-200"
+        >
           Continue Shopping
         </Link>
       </div>
@@ -29,12 +29,12 @@ export default function CheckoutPage() {
 
   if (!session) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>Please login to checkout</h1>
-        <Link href="/auth/login" style={{
-          display: 'inline-block', marginTop: '1.5rem', background: 'black',
-          color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', textDecoration: 'none',
-        }}>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in-up">
+        <h1 className="text-2xl font-bold text-slate-900 mb-4">Please login to checkout</h1>
+        <Link
+          href="/auth/login"
+          className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-xl font-semibold shadow-sm hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all duration-200"
+        >
           Login
         </Link>
       </div>
@@ -63,58 +63,60 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div>
-      <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem' }}>Checkout</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-        <div>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '1rem' }}>Order Items</h2>
-          {cart.map(item => (
-            <div key={item.id} style={{
-              display: 'flex', gap: '1rem', alignItems: 'center',
-              background: 'white', padding: '1rem', borderRadius: '12px',
-              marginBottom: '1rem', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-            }}>
-              <img
-                src={item.image}
-                alt={item.name}
-                style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '8px' }}
-              />
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: '600' }}>{item.name}</p>
-                <p style={{ color: '#666', fontSize: '0.9rem' }}>Qty: {item.quantity}</p>
+    <div className="animate-fade-in">
+      <h1 className="text-3xl font-bold text-slate-900 mb-8">Checkout</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Order Items</h2>
+          <div className="space-y-3">
+            {cart.map((item, index) => (
+              <div
+                key={item.id}
+                className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm animate-fade-in-up"
+                style={{ animationDelay: `${index * 60}ms` }}
+              >
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-16 h-16 object-cover rounded-xl flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900 truncate">{item.name}</p>
+                  <p className="text-sm text-slate-400">Qty: {item.quantity}</p>
+                </div>
+                <p className="font-bold text-slate-900">${(item.price * item.quantity).toFixed(2)}</p>
               </div>
-              <p style={{ fontWeight: 'bold' }}>${(item.price * item.quantity).toFixed(2)}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        <div style={{
-          background: 'white', padding: '1.5rem', borderRadius: '12px',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.1)', height: 'fit-content',
-        }}>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1rem' }}>Summary</h2>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span>Subtotal</span><span>${totalPrice.toFixed(2)}</span>
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-fit animate-fade-in-up animation-delay-200">
+          <h2 className="text-lg font-bold text-slate-900 mb-5">Summary</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between text-slate-500">
+              <span>Subtotal</span>
+              <span>${totalPrice.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Shipping</span>
+              <span className="text-emerald-600 font-medium">Free</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <span>Shipping</span><span>Free</span>
+          <div className="border-t border-slate-100 mt-4 pt-4 flex justify-between font-bold text-slate-900">
+            <span>Total</span>
+            <span>${totalPrice.toFixed(2)}</span>
           </div>
-          <hr />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', fontWeight: 'bold', fontSize: '1.2rem' }}>
-            <span>Total</span><span>${totalPrice.toFixed(2)}</span>
-          </div>
-          <p style={{ marginTop: '1rem', color: '#666', fontSize: '0.9rem' }}>
-            Logged in as: {session.user.email}
-          </p>
-          {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+          <p className="text-xs text-slate-400 mt-3">Logged in as {session.user.email}</p>
+          {error && (
+            <div className="mt-3 bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
+              {error}
+            </div>
+          )}
           <button
             onClick={handlePlaceOrder}
             disabled={loading}
-            style={{
-              width: '100%', marginTop: '1.5rem', padding: '1rem',
-              background: 'black', color: 'white', borderRadius: '8px',
-              border: 'none', fontSize: '1rem', cursor: 'pointer',
-            }}
+            className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3.5 rounded-xl font-semibold shadow-sm hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-sm transition-all duration-200 cursor-pointer"
           >
             {loading ? 'Placing order...' : 'Place Order'}
           </button>
