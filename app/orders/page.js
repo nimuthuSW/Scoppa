@@ -2,6 +2,10 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import ProductImage from '@/app/components/ProductImage'
+import OrderStatusBadge from '@/app/components/OrderStatusBadge'
+
+export const metadata = { title: 'My Orders — sċoppa' }
 
 export default async function OrdersPage() {
   const session = await auth()
@@ -46,9 +50,7 @@ export default async function OrdersPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="inline-block bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-100">
-                    {order.status}
-                  </span>
+                  <OrderStatusBadge status={order.status} />
                   <p className="font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent mt-1.5">
                     ${order.total.toFixed(2)}
                   </p>
@@ -58,10 +60,11 @@ export default async function OrdersPage() {
               <div className="flex gap-2 flex-wrap">
                 {order.items.map(item => (
                   <div key={item.id} className="relative">
-                    <img
+                    <ProductImage
                       src={item.product.image}
                       alt={item.product.name}
-                      className="w-14 h-14 object-cover rounded-xl border border-slate-100"
+                      sizes="56px"
+                      className="w-14 h-14 rounded-xl border border-slate-100"
                     />
                     {item.quantity > 1 && (
                       <span className="absolute -top-1 -right-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">

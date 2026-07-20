@@ -2,6 +2,7 @@
 
 import { useCart } from '@/app/components/Cartcontext'
 import Link from 'next/link'
+import ProductImage from '@/app/components/ProductImage'
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, totalPrice } = useCart()
@@ -34,10 +35,11 @@ export default function CartPage() {
               className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm animate-fade-in-up"
               style={{ animationDelay: `${index * 60}ms` }}
             >
-              <img
+              <ProductImage
                 src={item.image}
                 alt={item.name}
-                className="w-20 h-20 object-cover rounded-xl flex-shrink-0"
+                sizes="80px"
+                className="w-20 h-20 rounded-xl flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold text-slate-900 truncate">{item.name}</h2>
@@ -53,7 +55,8 @@ export default function CartPage() {
                 <span className="font-semibold w-6 text-center text-sm">{item.quantity}</span>
                 <button
                   onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition-all text-lg cursor-pointer"
+                  disabled={Number.isInteger(item.stock) && item.quantity >= item.stock}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition-all text-lg cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-slate-200 disabled:hover:text-inherit"
                 >
                   +
                 </button>

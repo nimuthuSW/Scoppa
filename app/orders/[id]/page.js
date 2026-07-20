@@ -2,6 +2,18 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import ProductImage from '@/app/components/ProductImage'
+import OrderStatusBadge from '@/app/components/OrderStatusBadge'
+
+export const metadata = { title: 'Order details — sċoppa' }
+
+const STATUS_HEADINGS = {
+  pending: { icon: '⏳', title: 'Order Pending Payment' },
+  confirmed: { icon: '✓', title: 'Order Confirmed!' },
+  shipped: { icon: '🚚', title: 'Order Shipped' },
+  delivered: { icon: '📦', title: 'Order Delivered' },
+  cancelled: { icon: '✕', title: 'Order Cancelled' },
+}
 
 export default async function OrderPage({ params }) {
   const { id } = await params
@@ -22,10 +34,15 @@ export default async function OrderPage({ params }) {
     <div className="max-w-2xl mx-auto">
       <div className="text-center mb-10 animate-fade-in-up">
         <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-full flex items-center justify-center mx-auto mb-5 text-2xl shadow-md shadow-indigo-100">
-          ✓
+          {(STATUS_HEADINGS[order.status] ?? STATUS_HEADINGS.confirmed).icon}
         </div>
-        <h1 className="text-3xl font-bold text-slate-900">Order Confirmed!</h1>
+        <h1 className="text-3xl font-bold text-slate-900">
+          {(STATUS_HEADINGS[order.status] ?? STATUS_HEADINGS.confirmed).title}
+        </h1>
         <p className="text-slate-400 text-sm mt-2 font-mono">#{order.id}</p>
+        <div className="mt-3">
+          <OrderStatusBadge status={order.status} />
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 animate-fade-in-up animation-delay-150">
@@ -33,10 +50,11 @@ export default async function OrderPage({ params }) {
         <div className="divide-y divide-slate-50">
           {order.items.map(item => (
             <div key={item.id} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
-              <img
+              <ProductImage
                 src={item.product.image}
                 alt={item.product.name}
-                className="w-16 h-16 object-cover rounded-xl flex-shrink-0"
+                sizes="64px"
+                className="w-16 h-16 rounded-xl flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-900 truncate">{item.product.name}</p>

@@ -1,7 +1,13 @@
+require('dotenv/config')
 const { PrismaClient } = require('@prisma/client')
 const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3')
+const { PrismaLibSql } = require('@prisma/adapter-libsql')
+const bcrypt = require('bcryptjs')
 
-const adapter = new PrismaBetterSqlite3({ url: 'file:./dev.db' })
+const url = process.env.DATABASE_URL ?? 'file:./dev.db'
+const adapter = /^(libsql:|wss:|https:)/.test(url)
+  ? new PrismaLibSql({ url, authToken: process.env.DATABASE_AUTH_TOKEN })
+  : new PrismaBetterSqlite3({ url })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
@@ -33,7 +39,7 @@ async function main() {
         name: 'Hooded Sweatshirt',
         description: 'A heavyweight cotton-blend hoodie with a kangaroo pocket and adjustable drawstring. Perfect for layering.',
         price: 59.99,
-        image: 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600',
+        image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600',
         stock: 40,
         category: 'Clothing',
       },
@@ -191,6 +197,22 @@ async function main() {
   })
 
   console.log('✅ 21 products seeded across 4 categories!')
+
+  // Promote (or create) the store admin from env vars, so no credentials
+  // live in the repo. Set ADMIN_EMAIL and ADMIN_PASSWORD in .env.
+  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim()
+  const adminPassword = process.env.ADMIN_PASSWORD
+  if (adminEmail && adminPassword && adminPassword.length >= 8) {
+    const hashed = await bcrypt.hash(adminPassword, 10)
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: { role: 'admin' },
+      create: { name: 'Admin', email: adminEmail, password: hashed, role: 'admin' },
+    })
+    console.log(`✅ Admin user ready: ${adminEmail}`)
+  } else {
+    console.log('ℹ️  Skipped admin user (set ADMIN_EMAIL and ADMIN_PASSWORD ≥ 8 chars in .env)')
+  }
 }
 
 main()

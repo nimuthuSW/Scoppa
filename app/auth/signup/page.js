@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 
 export default function SignupPage() {
@@ -17,19 +18,33 @@ export default function SignupPage() {
     setLoading(true)
     setError('')
 
-    const res = await fetch('/api/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
-    })
+    try {
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      })
 
-    const data = await res.json()
+      const data = await res.json()
 
-    if (!res.ok) {
-      setError(data.error)
+      if (!res.ok) {
+        setError(data.error ?? 'Something went wrong. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      // Sign the new user in right away instead of bouncing them to the
+      // login form.
+      const result = await signIn('credentials', { email, password, redirect: false })
+      if (result?.error) {
+        router.push('/auth/login')
+      } else {
+        router.push('/')
+        router.refresh()
+      }
+    } catch {
+      setError('Could not reach the server. Please try again.')
       setLoading(false)
-    } else {
-      router.push('/auth/login')
     }
   }
 

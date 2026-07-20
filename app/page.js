@@ -1,5 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import ProductImage from '@/app/components/ProductImage'
+
+// Category tiles come from the database — render per-request so admin
+// changes show up without a rebuild.
+export const dynamic = 'force-dynamic'
 
 const CATEGORY_META = {
   Clothing: {
@@ -73,19 +78,21 @@ export default async function Home() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {categoryGroups.map((group, index) => {
-            const meta = CATEGORY_META[group.category] ?? { image: '', emoji: '🛍️' }
+            const meta = CATEGORY_META[group.category] ?? { image: null, emoji: '🛍️' }
             return (
               <Link
                 key={group.category}
-                href={`/products?category=${group.category}`}
+                href={`/products?category=${encodeURIComponent(group.category)}`}
                 className="group block animate-fade-in-up"
                 style={{ animationDelay: `${500 + index * 80}ms` }}
               >
                 <div className="relative rounded-2xl overflow-hidden aspect-square shadow-sm hover:shadow-xl hover:shadow-indigo-100 hover:-translate-y-1 transition-all duration-300">
-                  <img
+                  <ProductImage
                     src={meta.image}
                     alt={group.category}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    sizes="(max-width: 1024px) 50vw, 25vw"
+                    className="w-full h-full absolute inset-0"
+                    imageClassName="group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-4">

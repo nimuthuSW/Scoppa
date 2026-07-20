@@ -34,6 +34,11 @@ export default function Navbar() {
             <Link href="/orders" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors duration-150">
               Orders
             </Link>
+            {session?.user?.role === 'admin' && (
+              <Link href="/admin" className="text-sm font-medium text-violet-600 hover:text-indigo-600 transition-colors duration-150">
+                Admin
+              </Link>
+            )}
 
             {session ? (
               <div className="flex items-center gap-3">

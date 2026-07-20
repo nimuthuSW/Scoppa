@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# sċoppa — e-commerce store
 
-## Getting Started
+A full-stack store built with Next.js 16 (App Router), Prisma 7 + SQLite/Turso, Auth.js (NextAuth v5), Stripe Checkout, and Tailwind CSS 4.
 
-First, run the development server:
+**Features**: product catalog with categories + search, stock-aware cart (localStorage), credentials auth, Stripe-powered checkout with server-side price/stock validation, order history, webhook-driven order fulfillment, and a role-gated admin panel (product CRUD + order status management).
+
+## Local development
 
 ```bash
+npm install
+cp .env.example .env       # then fill in the values
+npx prisma migrate dev     # create the local SQLite db
+npm run db:seed            # seed products + admin user
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See [.env.example](.env.example). You need at minimum `DATABASE_URL`, `AUTH_SECRET`, and the two Stripe keys. `ADMIN_EMAIL`/`ADMIN_PASSWORD` control the admin account the seed script creates.
 
-## Learn More
+### Testing payments locally
 
-To learn more about Next.js, take a look at the following resources:
+Use Stripe test keys and card `4242 4242 4242 4242` (any future expiry / any CVC). Orders are confirmed on the checkout success page even without a webhook; to also test webhooks locally:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+# copy the printed whsec_... into STRIPE_WEBHOOK_SECRET
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## How checkout works
 
-## Deploy on Vercel
+1. `POST /api/checkout` re-reads every cart item from the database (the client only sends product ids + quantities), validates stock, creates a `pending` order, and starts a Stripe Checkout Session.
+2. Stripe redirects back to `/checkout/success`, which verifies the session is paid, then confirms the order and decrements stock (idempotently — the webhook can do the same job first).
+3. `checkout.session.expired` webhooks cancel abandoned pending orders.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deploying (Vercel + Turso)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Database** — create a [Turso](https://turso.tech) database, then set `DATABASE_URL=libsql://...` and `DATABASE_AUTH_TOKEN`. Apply the schema by running `npm run db:migrate` (and optionally `npm run db:seed`) locally with those production values.
+2. **Vercel** — import the repo; `postinstall` runs `prisma generate` automatically. Set all env vars from `.env.example` (use **live** Stripe keys and a strong, fresh `AUTH_SECRET` + `ADMIN_PASSWORD`).
+3. **Stripe webhook** — in the Stripe dashboard add an endpoint for `https://your-domain.com/api/webhooks/stripe` subscribed to `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, and set the signing secret as `STRIPE_WEBHOOK_SECRET`.
+
+## Admin
+
+Sign in with the seeded admin account and open `/admin` (also linked in the navbar) to manage products and order statuses.

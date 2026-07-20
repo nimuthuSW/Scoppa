@@ -27,7 +27,12 @@ export default function LoginPage() {
       setError('Invalid email or password')
       setLoading(false)
     } else {
-      router.push('/')
+      // Return to the page that sent us here (e.g. checkout); only allow
+      // same-site paths to avoid open redirects.
+      const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl')
+      const target = callbackUrl?.startsWith('/') && !callbackUrl.startsWith('//') ? callbackUrl : '/'
+      router.push(target)
+      router.refresh()
     }
   }
 

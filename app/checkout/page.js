@@ -2,14 +2,13 @@
 
 import { useCart } from '@/app/components/Cartcontext'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
+import ProductImage from '@/app/components/ProductImage'
 
 export default function CheckoutPage() {
-  const { cart, totalPrice, clearCart } = useCart()
+  const { cart, totalPrice } = useCart()
   const { data: session } = useSession()
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -45,20 +44,29 @@ export default function CheckoutPage() {
     setLoading(true)
     setError('')
 
-    const res = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: cart, total: totalPrice }),
-    })
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+        }),
+      })
 
-    const data = await res.json()
+      const data = await res.json()
 
-    if (!res.ok) {
-      setError(data.error)
+      if (!res.ok) {
+        setError(data.error ?? 'Something went wrong. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      // Hand off to Stripe Checkout — the cart is cleared only after
+      // payment succeeds, so cancelling keeps it intact.
+      window.location.assign(data.url)
+    } catch {
+      setError('Could not reach the server. Please check your connection and try again.')
       setLoading(false)
-    } else {
-      clearCart()
-      router.push(`/orders/${data.orderId}`)
     }
   }
 
@@ -76,10 +84,11 @@ export default function CheckoutPage() {
                 className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm animate-fade-in-up"
                 style={{ animationDelay: `${index * 60}ms` }}
               >
-                <img
+                <ProductImage
                   src={item.image}
                   alt={item.name}
-                  className="w-16 h-16 object-cover rounded-xl flex-shrink-0"
+                  sizes="64px"
+                  className="w-16 h-16 rounded-xl flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900 truncate">{item.name}</p>
@@ -118,7 +127,7 @@ export default function CheckoutPage() {
             disabled={loading}
             className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3.5 rounded-xl font-semibold shadow-sm hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-sm transition-all duration-200 cursor-pointer"
           >
-            {loading ? 'Placing order...' : 'Place Order'}
+            {loading ? 'Redirecting to payment...' : 'Pay with Stripe'}
           </button>
         </div>
       </div>
