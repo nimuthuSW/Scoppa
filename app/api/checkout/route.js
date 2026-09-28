@@ -5,6 +5,19 @@ import { NextResponse } from 'next/server'
 
 const MAX_QUANTITY_PER_ITEM = 99
 
+// Stripe only accepts absolute https image URLs. Uploaded images are stored
+// as site-relative paths (/api/images/<id>), so resolve them against the
+// site origin — and skip the image on plain-http origins like localhost.
+function stripeImages(image, origin) {
+  if (!image) return {}
+  try {
+    const url = new URL(image, origin)
+    return url.protocol === 'https:' ? { images: [url.href] } : {}
+  } catch {
+    return {}
+  }
+}
+
 export async function POST(req) {
   try {
     const session = await auth()
@@ -88,7 +101,7 @@ export async function POST(req) {
             unit_amount: Math.round(product.price * 100),
             product_data: {
               name: product.name,
-              ...(product.image ? { images: [product.image] } : {}),
+              ...stripeImages(product.image, origin),
             },
           },
         })),
