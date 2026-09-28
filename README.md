@@ -2,7 +2,7 @@
 
 A full-stack store built with Next.js 16 (App Router), Prisma 7 + SQLite/Turso, Auth.js (NextAuth v5), Stripe Checkout, and Tailwind CSS 4.
 
-**Features**: product catalog with categories + search, stock-aware cart (localStorage), credentials auth, Stripe-powered checkout with server-side price/stock validation, order history, webhook-driven order fulfillment, and a role-gated admin panel (product CRUD + order status management).
+**Features**: product catalog with categories + search, stock-aware cart (localStorage), credentials auth, Stripe-powered checkout with server-side price/stock validation, order history, webhook-driven order fulfillment, and a role-gated admin panel (product CRUD with image uploads, order status management, user roles).
 
 ## Local development
 
@@ -43,4 +43,8 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ## Admin
 
-Sign in with the seeded admin account and open `/admin` (also linked in the navbar) to manage products and order statuses.
+Sign in with the seeded admin account and open `/admin` (also linked in the navbar):
+
+- **Products** — search and filter by category or stock level; add/edit products, picking a category from the existing ones (or creating a new one) and uploading an image (JPEG/PNG/WebP/GIF/AVIF, up to 2 MB) or pasting an `https://` URL. Uploaded images are stored in the database and served from `/api/images/<id>`.
+- **Orders** — update order statuses.
+- **Users** — promote customers to admin or remove admin rights. Access checks read the role from the database, so changes apply immediately (the navbar's Admin link updates on the user's next login).

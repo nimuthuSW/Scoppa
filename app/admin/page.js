@@ -1,17 +1,44 @@
 import { prisma } from '@/lib/prisma'
-import { requireAdminPage } from '@/lib/admin'
+import { requireAdminPage, getCategories } from '@/lib/admin'
 import { deleteProduct } from './actions'
 import ProductImage from '@/app/components/ProductImage'
 import Link from 'next/link'
 
 export const metadata = { title: 'Admin — sċoppa' }
 
+const STOCK_FILTERS = {
+  low: { label: 'Low stock (1–5)', where: { stock: { gte: 1, lte: 5 } } },
+  out: { label: 'Out of stock', where: { stock: { lt: 1 } } },
+}
+
+const filterInputClass =
+  'px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-indigo-200 transition-colors'
+
 export default async function AdminPage({ searchParams }) {
   await requireAdminPage()
-  const { error } = await searchParams
+  const { error, q, category, stock } = await searchParams
+  const query = typeof q === 'string' ? q.trim() : ''
+  const categoryFilter = typeof category === 'string' ? category : ''
+  const stockFilter = STOCK_FILTERS[stock] ? stock : ''
+  const isFiltered = Boolean(query || categoryFilter || stockFilter)
 
-  const [products, orderCount, pendingCount] = await Promise.all([
-    prisma.product.findMany({ orderBy: { createdAt: 'asc' } }),
+  const where = {
+    ...(categoryFilter ? { category: categoryFilter } : {}),
+    ...(stockFilter ? STOCK_FILTERS[stockFilter].where : {}),
+    ...(query
+      ? {
+          OR: [
+            { name: { contains: query } },
+            { description: { contains: query } },
+          ],
+        }
+      : {}),
+  }
+
+  const [products, totalProducts, categories, orderCount, pendingCount] = await Promise.all([
+    prisma.product.findMany({ where, orderBy: { createdAt: 'asc' } }),
+    prisma.product.count(),
+    getCategories(),
     prisma.order.count(),
     prisma.order.count({ where: { status: { in: ['confirmed', 'pending'] } } }),
   ])
@@ -22,10 +49,16 @@ export default async function AdminPage({ searchParams }) {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Admin</h1>
           <p className="text-slate-400 mt-1 text-sm">
-            {products.length} products · {orderCount} orders ({pendingCount} awaiting action)
+            {totalProducts} products · {orderCount} orders ({pendingCount} awaiting action)
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/admin/users"
+            className="px-5 py-2.5 border border-indigo-100 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 hover:border-indigo-200 transition-all duration-150"
+          >
+            Manage Users
+          </Link>
           <Link
             href="/admin/orders"
             className="px-5 py-2.5 border border-indigo-100 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-50 hover:border-indigo-200 transition-all duration-150"
@@ -45,6 +78,49 @@ export default async function AdminPage({ searchParams }) {
         <div className="mb-6 bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
           {error}
         </div>
+      )}
+
+      <form action="/admin" className="flex flex-col sm:flex-row gap-2 mb-4">
+        <input
+          type="search"
+          name="q"
+          defaultValue={query}
+          placeholder="Search products..."
+          aria-label="Search products"
+          className={`${filterInputClass} sm:flex-1`}
+        />
+        <select name="category" defaultValue={categoryFilter} aria-label="Category" className={filterInputClass}>
+          <option value="">All categories</option>
+          {categories.map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <select name="stock" defaultValue={stockFilter} aria-label="Stock" className={filterInputClass}>
+          <option value="">Any stock</option>
+          {Object.entries(STOCK_FILTERS).map(([value, { label }]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium text-slate-600 hover:border-indigo-200 hover:text-indigo-600 transition-all cursor-pointer"
+        >
+          Filter
+        </button>
+        {isFiltered && (
+          <Link
+            href="/admin"
+            className="px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-indigo-600 transition-colors text-center"
+          >
+            Clear
+          </Link>
+        )}
+      </form>
+
+      {isFiltered && (
+        <p className="text-slate-400 text-sm mb-4">
+          Showing {products.length} of {totalProducts} products
+        </p>
       )}
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
@@ -101,7 +177,9 @@ export default async function AdminPage({ searchParams }) {
           </tbody>
         </table>
         {products.length === 0 && (
-          <p className="text-center text-slate-400 py-10">No products yet — add your first one.</p>
+          <p className="text-center text-slate-400 py-10">
+            {isFiltered ? 'No products match these filters.' : 'No products yet — add your first one.'}
+          </p>
         )}
       </div>
     </div>

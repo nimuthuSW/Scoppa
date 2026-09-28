@@ -1,10 +1,12 @@
 import { saveProduct } from './actions'
 import Link from 'next/link'
+import CategoryField from './CategoryField'
+import ImageField from './ImageField'
 
 const inputClass =
   'w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hover:border-indigo-200 transition-colors'
 
-export default function ProductForm({ product = null, error = null }) {
+export default function ProductForm({ product = null, categories = [], error = null }) {
   return (
     <div className="max-w-xl animate-fade-in-up">
       <h1 className="text-3xl font-bold text-slate-900 mb-8">
@@ -42,13 +44,13 @@ export default function ProductForm({ product = null, error = null }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Category</label>
-          <input type="text" name="category" defaultValue={product?.category ?? ''} placeholder="Uncategorized" className={inputClass} />
+          <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1.5">Category</label>
+          <CategoryField categories={categories} defaultValue={product?.category} inputClass={inputClass} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Image URL (https)</label>
-          <input type="url" name="image" defaultValue={product?.image ?? ''} placeholder="https://..." className={inputClass} />
+          <span className="block text-sm font-medium text-slate-700 mb-1.5">Image</span>
+          <ImageField defaultValue={product?.image} inputClass={inputClass} />
         </div>
 
         <div className="flex gap-3 pt-2">

@@ -48,3 +48,11 @@ model OrderItem {
   quantity  Int
   price     Float
 }
+// Admin-uploaded product images, stored in the database so uploads work on
+// read-only serverless filesystems. Served by /api/images/[id].
+model Upload {
+  id          String   @id @default(cuid())
+  data        Bytes
+  contentType String
+  createdAt   DateTime @default(now())
+}
