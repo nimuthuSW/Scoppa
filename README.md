@@ -47,7 +47,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ## Deploying (Vercel + Turso)
 
-1. **Database** — create a [Turso](https://turso.tech) database, then set `DATABASE_URL=libsql://...` and `DATABASE_AUTH_TOKEN`. Apply the schema by running `npm run db:migrate` (and optionally `npm run db:seed`) locally with those production values.
+1. **Database** — create a [Turso](https://turso.tech) database, then set `DATABASE_URL=libsql://...` and `DATABASE_AUTH_TOKEN` (create one with `turso db tokens create <db-name>`). Apply the schema by running `npm run db:migrate:turso` locally with those production values — `prisma migrate deploy` can't connect to `libsql://` URLs. Re-run it after pulling changes that add migrations; it only applies the ones that are new. To load the sample products and create the admin account, run `npm run db:seed` **once, on the empty database** — it deletes all existing products and orders first.
 2. **Vercel** — import the repo; `postinstall` runs `prisma generate` automatically. Set all env vars from `.env.example` (use **live** Stripe keys and a strong, fresh `AUTH_SECRET` + `ADMIN_PASSWORD`).
 3. **Stripe webhook** — in the Stripe dashboard add an endpoint for `https://your-domain.com/api/webhooks/stripe` subscribed to `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, and set the signing secret as `STRIPE_WEBHOOK_SECRET`.
 
