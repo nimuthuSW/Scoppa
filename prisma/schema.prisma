@@ -34,6 +34,15 @@ model Order {
   user            User        @relation(fields: [userId], references: [id])
   total           Float
   status          String      @default("pending")
+  // 'card' (Stripe), 'bank_transfer' or 'cod' (cash on delivery)
+  paymentMethod   String      @default("card")
+  paidAt          DateTime?
+  // True while the order's items are deducted from product stock, so
+  // cancelling knows whether to put them back.
+  stockDeducted   Boolean     @default(false)
+  shippingName    String?
+  shippingPhone   String?
+  shippingAddress String?
   stripeSessionId String?     @unique
   createdAt       DateTime    @default(now())
   items           OrderItem[]

@@ -8,7 +8,7 @@ export const metadata = { title: 'Order complete — sċoppa' }
 
 export default async function CheckoutSuccessPage({ searchParams }) {
   const { session_id: sessionId } = await searchParams
-  if (!sessionId) redirect('/cart')
+  if (!sessionId || !stripe) redirect('/cart')
 
   let orderId = null
   try {

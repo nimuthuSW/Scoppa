@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ProductImage from '@/app/components/ProductImage'
 import OrderStatusBadge from '@/app/components/OrderStatusBadge'
+import { orderReference, paymentMethodLabel } from '@/lib/payments'
 
 export const metadata = { title: 'My Orders — sċoppa' }
 
@@ -44,9 +45,11 @@ export default async function OrdersPage() {
             >
               <div className="flex justify-between items-start mb-5">
                 <div>
-                  <p className="font-semibold text-slate-900">Order #{order.id.slice(-8).toUpperCase()}</p>
+                  <p className="font-semibold text-slate-900">Order #{orderReference(order.id)}</p>
                   <p className="text-sm text-slate-400 mt-0.5">
                     {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    {' · '}
+                    {paymentMethodLabel(order.paymentMethod)}
                   </p>
                 </div>
                 <div className="text-right">

@@ -1,13 +1,15 @@
 import { prisma } from '@/lib/prisma'
 import { requireAdminPage } from '@/lib/admin'
-import { updateOrderStatus } from '../actions'
+import { updateOrderStatus, markPaid } from '../actions'
 import OrderStatusBadge, { ORDER_STATUSES } from '@/app/components/OrderStatusBadge'
+import { orderReference, paymentMethodLabel } from '@/lib/payments'
 import Link from 'next/link'
 
 export const metadata = { title: 'Orders — sċoppa admin' }
 
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({ searchParams }) {
   await requireAdminPage()
+  const { error } = await searchParams
 
   const orders = await prisma.order.findMany({
     include: {
@@ -32,6 +34,12 @@ export default async function AdminOrdersPage() {
         </Link>
       </div>
 
+      {error && (
+        <div className="mb-6 bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
+          {error}
+        </div>
+      )}
+
       {orders.length === 0 ? (
         <p className="text-center text-slate-400 py-16">No orders yet.</p>
       ) : (
@@ -41,8 +49,17 @@ export default async function AdminOrdersPage() {
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <p className="font-semibold text-slate-900">#{order.id.slice(-8).toUpperCase()}</p>
+                    <p className="font-semibold text-slate-900">#{orderReference(order.id)}</p>
                     <OrderStatusBadge status={order.status} />
+                    <span
+                      className={`text-xs font-semibold px-3 py-1 rounded-full border ${
+                        order.paidAt
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                          : 'bg-slate-50 text-slate-500 border-slate-100'
+                      }`}
+                    >
+                      {paymentMethodLabel(order.paymentMethod)} · {order.paidAt ? 'paid' : 'unpaid'}
+                    </span>
                   </div>
                   <p className="text-sm text-slate-400 mt-1">
                     {order.user.name ?? order.user.email} ·{' '}
@@ -53,28 +70,49 @@ export default async function AdminOrdersPage() {
                   <p className="text-sm text-slate-500 mt-2 truncate">
                     {order.items.map(item => `${item.quantity}× ${item.product.name}`).join(', ')}
                   </p>
+                  {order.shippingAddress && (
+                    <p className="text-sm text-slate-500 mt-2">
+                      <span className="font-medium text-slate-700">Deliver to:</span>{' '}
+                      {order.shippingName}, {order.shippingAddress.replace(/\s*\n\s*/g, ', ')} · {order.shippingPhone}
+                    </p>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-4 flex-shrink-0">
+                <div className="flex flex-col items-end gap-3 flex-shrink-0">
                   <p className="font-bold text-slate-900">${order.total.toFixed(2)}</p>
                   <form action={updateOrderStatus} className="flex items-center gap-2">
                     <input type="hidden" name="id" value={order.id} />
                     <select
                       name="status"
                       defaultValue={order.status}
-                      className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      disabled={order.status === 'cancelled'}
+                      aria-label="Order status"
+                      className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                     >
                       {ORDER_STATUSES.map(status => (
                         <option key={status} value={status}>{status}</option>
                       ))}
                     </select>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all cursor-pointer"
-                    >
-                      Update
-                    </button>
+                    {order.status !== 'cancelled' && (
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all cursor-pointer"
+                      >
+                        Update
+                      </button>
+                    )}
                   </form>
+                  {!order.paidAt && order.status !== 'cancelled' && order.paymentMethod !== 'card' && (
+                    <form action={markPaid}>
+                      <input type="hidden" name="id" value={order.id} />
+                      <button
+                        type="submit"
+                        className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"
+                      >
+                        {order.paymentMethod === 'cod' ? 'Mark cash collected' : 'Mark transfer received'}
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
             </div>

@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { ORDER_STATUSES } from '@/app/components/OrderStatusBadge'
 import { detectImageType, MAX_UPLOAD_BYTES, UPLOAD_PATH_PREFIX, uploadIdFromImage } from '@/lib/uploads'
 import { NEW_CATEGORY } from '@/lib/categories'
+import { cancelOrderAndRestock, markOrderPaid } from '@/lib/orders'
 
 function backWithError(path, message) {
   redirect(`${path}?error=${encodeURIComponent(message)}`)
@@ -133,10 +134,36 @@ export async function updateOrderStatus(formData) {
 
   const id = formData.get('id')?.toString()
   const status = formData.get('status')?.toString()
+  if (!id || !ORDER_STATUSES.includes(status)) redirect('/admin/orders')
 
-  if (id && ORDER_STATUSES.includes(status)) {
-    await prisma.order.update({ where: { id }, data: { status } })
+  const order = await prisma.order.findUnique({ where: { id }, select: { status: true } })
+  if (!order) backWithError('/admin/orders', 'That order no longer exists.')
+
+  if (order.status !== status) {
+    // Cancelling returns the items to stock, so a cancelled order is final.
+    if (order.status === 'cancelled') {
+      backWithError('/admin/orders', 'Cancelled orders can\'t be reopened — ask the customer to order again.')
+    }
+    if (status === 'cancelled') {
+      await cancelOrderAndRestock(id)
+      revalidatePath('/products')
+      revalidatePath('/admin')
+    } else {
+      await prisma.order.update({ where: { id }, data: { status } })
+    }
   }
+
+  revalidatePath('/admin/orders')
+  revalidatePath('/orders')
+  redirect('/admin/orders')
+}
+
+// Bank transfer received, or cash collected on delivery.
+export async function markPaid(formData) {
+  await requireAdmin()
+
+  const id = formData.get('id')?.toString()
+  if (id) await markOrderPaid(id)
 
   revalidatePath('/admin/orders')
   revalidatePath('/orders')
