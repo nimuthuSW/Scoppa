@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import ProductImage from '@/app/components/ProductImage'
 import OrderStatusBadge from '@/app/components/OrderStatusBadge'
+import { orderReference, paymentMethodLabel } from '@/lib/payments'
+import { getBankTransferDetails } from '@/lib/payment-config'
 
 export const metadata = { title: 'Order details — sċoppa' }
 
@@ -30,16 +32,22 @@ export default async function OrderPage({ params }) {
 
   if (!order || order.userId !== session.user.id) notFound()
 
+  const reference = orderReference(order.id)
+  const awaitingTransfer =
+    order.paymentMethod === 'bank_transfer' && !order.paidAt && order.status !== 'cancelled'
+  const bankDetails = awaitingTransfer ? getBankTransferDetails() : null
+  const heading = order.status === 'pending' && order.paymentMethod === 'bank_transfer'
+    ? { icon: '🏦', title: 'Awaiting Bank Transfer' }
+    : STATUS_HEADINGS[order.status] ?? STATUS_HEADINGS.confirmed
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="text-center mb-10 animate-fade-in-up">
         <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-full flex items-center justify-center mx-auto mb-5 text-2xl shadow-md shadow-indigo-100">
-          {(STATUS_HEADINGS[order.status] ?? STATUS_HEADINGS.confirmed).icon}
+          {heading.icon}
         </div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {(STATUS_HEADINGS[order.status] ?? STATUS_HEADINGS.confirmed).title}
-        </h1>
-        <p className="text-slate-400 text-sm mt-2 font-mono">#{order.id}</p>
+        <h1 className="text-3xl font-bold text-slate-900">{heading.title}</h1>
+        <p className="text-slate-400 text-sm mt-2 font-mono">Order #{reference}</p>
         <div className="mt-3">
           <OrderStatusBadge status={order.status} />
         </div>
@@ -70,6 +78,48 @@ export default async function OrderPage({ params }) {
             ${order.total.toFixed(2)}
           </span>
         </div>
+      </div>
+
+      {awaitingTransfer && (
+        <div className="bg-amber-50 rounded-2xl border border-amber-100 p-6 mt-6 animate-fade-in-up animation-delay-150">
+          <h2 className="font-semibold text-amber-900 mb-2">Complete your bank transfer</h2>
+          <p className="text-sm text-amber-800 mb-4">
+            Transfer <strong>${order.total.toFixed(2)}</strong> to the account below, using{' '}
+            <strong className="font-mono">{reference}</strong>
+            {' as the payment reference. We’ll confirm your order once the payment arrives.'}
+          </p>
+          {bankDetails ? (
+            <pre className="bg-white rounded-xl border border-amber-100 p-4 text-sm text-slate-800 whitespace-pre-wrap font-sans">
+              {bankDetails}
+            </pre>
+          ) : (
+            <p className="text-sm text-amber-800">Please contact us for our bank details.</p>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 animate-fade-in-up animation-delay-150">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <h2 className="font-semibold text-slate-900 mb-3">Payment</h2>
+          <p className="text-sm text-slate-700">{paymentMethodLabel(order.paymentMethod)}</p>
+          <p className="text-sm text-slate-400 mt-1">
+            {order.paidAt
+              ? `Paid on ${new Date(order.paidAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`
+              : order.status === 'cancelled'
+                ? 'Not paid'
+                : order.paymentMethod === 'cod'
+                  ? `Pay $${order.total.toFixed(2)} in cash on delivery`
+                  : 'Awaiting payment'}
+          </p>
+        </div>
+        {order.shippingAddress && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <h2 className="font-semibold text-slate-900 mb-3">Delivery</h2>
+            <p className="text-sm text-slate-700">{order.shippingName}</p>
+            <p className="text-sm text-slate-500 whitespace-pre-line">{order.shippingAddress}</p>
+            <p className="text-sm text-slate-400 mt-1">{order.shippingPhone}</p>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 mt-8 justify-center animate-fade-in-up animation-delay-300">

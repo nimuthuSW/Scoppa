@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { requireAdminPage } from '@/lib/admin'
+import { requireAdminPage, getCategories } from '@/lib/admin'
 import { notFound } from 'next/navigation'
 import ProductForm from '../../ProductForm'
 
@@ -10,8 +10,11 @@ export default async function EditProductPage({ params, searchParams }) {
   const { id } = await params
   const { error } = await searchParams
 
-  const product = await prisma.product.findUnique({ where: { id } })
+  const [product, categories] = await Promise.all([
+    prisma.product.findUnique({ where: { id } }),
+    getCategories(),
+  ])
   if (!product) notFound()
 
-  return <ProductForm product={product} error={error} />
+  return <ProductForm product={product} categories={categories} error={error} />
 }

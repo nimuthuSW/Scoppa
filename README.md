@@ -2,7 +2,7 @@
 
 A full-stack store built with Next.js 16 (App Router), Prisma 7 + SQLite/Turso, Auth.js (NextAuth v5), Stripe Checkout, and Tailwind CSS 4.
 
-**Features**: product catalog with categories + search, stock-aware cart (localStorage), credentials auth, Stripe-powered checkout with server-side price/stock validation, order history, webhook-driven order fulfillment, and a role-gated admin panel (product CRUD + order status management).
+**Features**: product catalog with categories + search, stock-aware cart (localStorage), credentials auth, checkout with card (Stripe), bank transfer or cash on delivery and server-side price/stock validation, order history, webhook-driven order fulfillment, and a role-gated admin panel (product CRUD with image uploads, order status management, user roles).
 
 ## Local development
 
@@ -18,7 +18,17 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Environment variables
 
-See [.env.example](.env.example). You need at minimum `DATABASE_URL`, `AUTH_SECRET`, and the two Stripe keys. `ADMIN_EMAIL`/`ADMIN_PASSWORD` control the admin account the seed script creates.
+See [.env.example](.env.example). You need at minimum `DATABASE_URL` and `AUTH_SECRET`. `ADMIN_EMAIL`/`ADMIN_PASSWORD` control the admin account the seed script creates.
+
+### Payment methods
+
+| Method | Enabled when | Flow |
+| --- | --- | --- |
+| Card (Stripe) | `STRIPE_SECRET_KEY` is set | Paid online; order confirmed automatically. |
+| Bank transfer | `BANK_TRANSFER_DETAILS` is set | Order is `pending`; the customer sees your bank details and their order number as the reference. An admin clicks **Mark transfer received** to confirm it. |
+| Cash on delivery | always, unless `CASH_ON_DELIVERY="false"` | Order is `confirmed` right away; an admin clicks **Mark cash collected** after delivery. |
+
+Checkout collects a name, phone number and delivery address for every order. For bank transfer and cash on delivery, stock is reserved when the order is placed; cancelling an order from the admin panel puts its items back in stock.
 
 ### Testing payments locally
 
@@ -29,7 +39,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 # copy the printed whsec_... into STRIPE_WEBHOOK_SECRET
 ```
 
-## How checkout works
+## How card checkout works
 
 1. `POST /api/checkout` re-reads every cart item from the database (the client only sends product ids + quantities), validates stock, creates a `pending` order, and starts a Stripe Checkout Session.
 2. Stripe redirects back to `/checkout/success`, which verifies the session is paid, then confirms the order and decrements stock (idempotently — the webhook can do the same job first).
@@ -37,10 +47,14 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ## Deploying (Vercel + Turso)
 
-1. **Database** — create a [Turso](https://turso.tech) database, then set `DATABASE_URL=libsql://...` and `DATABASE_AUTH_TOKEN`. Apply the schema by running `npm run db:migrate` (and optionally `npm run db:seed`) locally with those production values.
+1. **Database** — create a [Turso](https://turso.tech) database, then set `DATABASE_URL=libsql://...` and `DATABASE_AUTH_TOKEN` (create one with `turso db tokens create <db-name>`). Apply the schema by running `npm run db:migrate:turso` locally with those production values — `prisma migrate deploy` can't connect to `libsql://` URLs. Re-run it after pulling changes that add migrations; it only applies the ones that are new. To load the sample products and create the admin account, run `npm run db:seed` **once, on the empty database** — it deletes all existing products and orders first.
 2. **Vercel** — import the repo; `postinstall` runs `prisma generate` automatically. Set all env vars from `.env.example` (use **live** Stripe keys and a strong, fresh `AUTH_SECRET` + `ADMIN_PASSWORD`).
 3. **Stripe webhook** — in the Stripe dashboard add an endpoint for `https://your-domain.com/api/webhooks/stripe` subscribed to `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, and set the signing secret as `STRIPE_WEBHOOK_SECRET`.
 
 ## Admin
 
-Sign in with the seeded admin account and open `/admin` (also linked in the navbar) to manage products and order statuses.
+Sign in with the seeded admin account and open `/admin` (also linked in the navbar):
+
+- **Products** — search and filter by category or stock level; add/edit products, picking a category from the existing ones (or creating a new one) and uploading an image (JPEG/PNG/WebP/GIF/AVIF, up to 2 MB) or pasting an `https://` URL. Uploaded images are stored in the database and served from `/api/images/<id>`.
+- **Orders** — see delivery details and payment status, update order statuses, and mark bank transfer / cash on delivery orders as paid. Cancelling returns items to stock, so cancelled orders can't be reopened.
+- **Users** — promote customers to admin or remove admin rights. Access checks read the role from the database, so changes apply immediately (the navbar's Admin link updates on the user's next login).

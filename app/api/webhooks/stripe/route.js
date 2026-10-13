@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET
-  if (!secret) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set — rejecting webhook')
+  if (!secret || !stripe) {
+    console.error('STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY is not set — rejecting webhook')
     return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
   }
 

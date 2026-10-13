@@ -1,9 +1,45 @@
 import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
 import { auth } from '@/lib/auth'
+import { reserveStock, OutOfStockError } from '@/lib/orders'
+import { getEnabledPaymentMethods } from '@/lib/payment-config'
 import { NextResponse } from 'next/server'
 
 const MAX_QUANTITY_PER_ITEM = 99
+
+// Stripe only accepts absolute https image URLs. Uploaded images are stored
+// as site-relative paths (/api/images/<id>), so resolve them against the
+// site origin — and skip the image on plain-http origins like localhost.
+function stripeImages(image, origin) {
+  if (!image) return {}
+  try {
+    const url = new URL(image, origin)
+    return url.protocol === 'https:' ? { images: [url.href] } : {}
+  } catch {
+    return {}
+  }
+}
+
+function parseShipping(shipping) {
+  const name = typeof shipping?.name === 'string' ? shipping.name.trim() : ''
+  const phone = typeof shipping?.phone === 'string' ? shipping.phone.trim() : ''
+  const address = typeof shipping?.address === 'string' ? shipping.address.trim() : ''
+
+  if (!name || !phone || !address) {
+    return { error: 'Please enter your name, phone number and delivery address.' }
+  }
+  if (name.length > 100 || address.length > 500) {
+    return { error: 'Your name or address is too long.' }
+  }
+  if (!/^\+?[\d\s()-]{6,20}$/.test(phone)) {
+    return { error: 'Please enter a valid phone number.' }
+  }
+  return { shippingName: name, shippingPhone: phone, shippingAddress: address }
+}
+
+function badRequest(error) {
+  return NextResponse.json({ error }, { status: 400 })
+}
 
 export async function POST(req) {
   try {
@@ -16,7 +52,17 @@ export async function POST(req) {
     const items = body?.items
 
     if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Your cart is empty.' }, { status: 400 })
+      return badRequest('Your cart is empty.')
+    }
+
+    const paymentMethod = body?.paymentMethod
+    if (!getEnabledPaymentMethods().includes(paymentMethod)) {
+      return badRequest('Please choose a payment method.')
+    }
+
+    const shipping = parseShipping(body?.shipping)
+    if (shipping.error) {
+      return badRequest(shipping.error)
     }
 
     // Only product ids and quantities are taken from the client —
@@ -30,7 +76,7 @@ export async function POST(req) {
         quantity < 1 ||
         quantity > MAX_QUANTITY_PER_ITEM
       ) {
-        return NextResponse.json({ error: 'Invalid cart items.' }, { status: 400 })
+        return badRequest('Invalid cart items.')
       }
       requested.set(item.id, (requested.get(item.id) ?? 0) + quantity)
     }
@@ -40,19 +86,12 @@ export async function POST(req) {
     })
 
     if (products.length !== requested.size) {
-      return NextResponse.json(
-        { error: 'Some items in your cart are no longer available. Please review your cart.' },
-        { status: 400 }
-      )
+      return badRequest('Some items in your cart are no longer available. Please review your cart.')
     }
 
-    for (const product of products) {
-      if (product.stock < requested.get(product.id)) {
-        return NextResponse.json(
-          { error: `Not enough stock for "${product.name}" — only ${product.stock} left.` },
-          { status: 400 }
-        )
-      }
+    const outOfStock = products.find(product => product.stock < requested.get(product.id))
+    if (outOfStock) {
+      return badRequest(`Not enough stock for "${outOfStock.name}" — only ${outOfStock.stock} left.`)
     }
 
     const total = products.reduce(
@@ -60,19 +99,26 @@ export async function POST(req) {
       0
     )
 
-    const order = await prisma.order.create({
-      data: {
-        userId: session.user.id,
-        total: Math.round(total * 100) / 100,
-        status: 'pending',
-        items: {
-          create: products.map(product => ({
-            productId: product.id,
-            quantity: requested.get(product.id),
-            price: product.price,
-          })),
-        },
+    const orderData = {
+      userId: session.user.id,
+      total: Math.round(total * 100) / 100,
+      paymentMethod,
+      ...shipping,
+      items: {
+        create: products.map(product => ({
+          productId: product.id,
+          quantity: requested.get(product.id),
+          price: product.price,
+        })),
       },
+    }
+
+    if (paymentMethod !== 'card') {
+      return placeOfflineOrder(orderData)
+    }
+
+    const order = await prisma.order.create({
+      data: { ...orderData, status: 'pending' },
     })
 
     const origin = req.headers.get('origin') ?? req.nextUrl.origin
@@ -88,7 +134,7 @@ export async function POST(req) {
             unit_amount: Math.round(product.price * 100),
             product_data: {
               name: product.name,
-              ...(product.image ? { images: [product.image] } : {}),
+              ...stripeImages(product.image, origin),
             },
           },
         })),
@@ -116,8 +162,36 @@ export async function POST(req) {
   } catch (err) {
     console.error('Checkout failed:', err)
     return NextResponse.json(
-      { error: 'Something went wrong while starting checkout. Please try again.' },
+      { error: 'Something went wrong while placing your order. Please try again.' },
       { status: 500 }
     )
+  }
+}
+
+// Bank transfer and cash on delivery: no online payment step, so the stock
+// is reserved as soon as the order is placed. Bank transfer orders wait in
+// 'pending' until an admin marks them paid; cash on delivery orders are
+// confirmed straight away and marked paid when the cash is collected.
+async function placeOfflineOrder(orderData) {
+  try {
+    const order = await prisma.$transaction(async tx => {
+      await reserveStock(
+        tx,
+        orderData.items.create.map(({ productId, quantity }) => ({ productId, quantity }))
+      )
+      return tx.order.create({
+        data: {
+          ...orderData,
+          status: orderData.paymentMethod === 'bank_transfer' ? 'pending' : 'confirmed',
+          stockDeducted: true,
+        },
+      })
+    })
+    return NextResponse.json({ orderId: order.id })
+  } catch (err) {
+    if (err instanceof OutOfStockError) {
+      return badRequest('Some items just sold out. Please review your cart.')
+    }
+    throw err
   }
 }

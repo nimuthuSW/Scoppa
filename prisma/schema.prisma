@@ -34,6 +34,15 @@ model Order {
   user            User        @relation(fields: [userId], references: [id])
   total           Float
   status          String      @default("pending")
+  // 'card' (Stripe), 'bank_transfer' or 'cod' (cash on delivery)
+  paymentMethod   String      @default("card")
+  paidAt          DateTime?
+  // True while the order's items are deducted from product stock, so
+  // cancelling knows whether to put them back.
+  stockDeducted   Boolean     @default(false)
+  shippingName    String?
+  shippingPhone   String?
+  shippingAddress String?
   stripeSessionId String?     @unique
   createdAt       DateTime    @default(now())
   items           OrderItem[]
@@ -47,4 +56,12 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
   price     Float
+}
+// Admin-uploaded product images, stored in the database so uploads work on
+// read-only serverless filesystems. Served by /api/images/[id].
+model Upload {
+  id          String   @id @default(cuid())
+  data        Bytes
+  contentType String
+  createdAt   DateTime @default(now())
 }
